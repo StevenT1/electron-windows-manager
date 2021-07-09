@@ -19,6 +19,6 @@
   },
   "private":true,
   "workspaces": [
-    "src/*"
+    "packages/*"
   ]
 }
