@@ -1,0 +1,24 @@
+{
+  "name": "electron-windows-manager",
+  "version": "0.0.1",
+  "description": "electron's windows manager which can provide methods to solve confusion problem",
+  "main": "index.js",
+  "author": "qiupo",
+  "license": "MIT",
+  "scripts": {
+    "build": "father-build"
+  },
+  "devDependencies": {
+    "@types/node": "^16.3.0",
+    "electron": "^11.2.1",
+    "father-build": "^1.19.1",
+    "lerna": "^4.0.0"
+  },
+  "peerDependencies": {
+    "electron": "^11.2.1"
+  },
+  "private":true,
+  "workspaces": [
+    "src/*"
+  ]
+}
