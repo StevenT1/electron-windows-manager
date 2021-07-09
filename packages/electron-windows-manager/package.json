@@ -12,9 +12,7 @@
   },
   "devDependencies": {
     "@types/node": "^16.3.0",
-    "electron": "^11.2.1",
-    "father-build": "^1.19.1",
-    "lerna": "^4.0.0"
+    "electron": "^11.2.1"
   },
   "peerDependencies": {
     "electron": "^11.2.1"
