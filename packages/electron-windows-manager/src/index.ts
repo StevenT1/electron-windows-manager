@@ -1,6 +1,6 @@
 import { BrowserWindowConstructorOptions, BrowserWindow, BrowserView, app } from 'electron';
-export class WindowsBox {
-  private static __Instance: WindowsBox;
+export class electronWindowsManager {
+  private static __Instance: electronWindowsManager;
   private windowsList: Map<number, windowsManager.windowList>;
   private componentList: Map<string, string | undefined>;
   private totalIdleWindowsNum: number;
@@ -30,10 +30,10 @@ export class WindowsBox {
     this.native = config.native
 
     // 单例模式
-    if (WindowsBox.__Instance === undefined) {
-      WindowsBox.__Instance = this;
+    if (electronWindowsManager.__Instance === undefined) {
+      electronWindowsManager.__Instance = this;
     }
-    return WindowsBox.__Instance;
+    return electronWindowsManager.__Instance;
   }
 
   /**

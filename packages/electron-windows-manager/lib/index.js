@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.WindowsBox = void 0;
+exports.electronWindowsManager = void 0;
 
 function _react() {
   const data = _interopRequireDefault(require("react"));
@@ -31,7 +31,7 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
-class WindowsBox {
+class electronWindowsManager {
   constructor(config) {
     this.windowsList = void 0;
     this.componentList = void 0;
@@ -62,11 +62,11 @@ class WindowsBox {
     };
     this.native = config.native; // 单例模式
 
-    if (WindowsBox.__Instance === undefined) {
-      WindowsBox.__Instance = this;
+    if (electronWindowsManager.__Instance === undefined) {
+      electronWindowsManager.__Instance = this;
     }
 
-    return WindowsBox.__Instance;
+    return electronWindowsManager.__Instance;
   }
   /**
    * 设置默认参数
@@ -376,5 +376,5 @@ class WindowsBox {
 
 }
 
-exports.WindowsBox = WindowsBox;
-WindowsBox.__Instance = void 0;
+exports.electronWindowsManager = electronWindowsManager;
+electronWindowsManager.__Instance = void 0;
