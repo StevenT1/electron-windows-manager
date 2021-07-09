@@ -9,6 +9,7 @@ export class WindowsBox {
   private baseWindowConfig: windowsManager.baseWindowConfig;
   private resourceDir:string;
   private constructor(config: windowsManager.config) {
+    //t
     this.totalIdleWindowsNum = 5; // 允许空闲的窗口数量
     this.windowsList = new Map(); // 窗口容器
     this.componentList = new Map();
