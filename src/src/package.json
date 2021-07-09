@@ -1,0 +1,29 @@
+{
+  "name": "src",
+  "version": "0.0.1",
+  "description": "> TODO: description",
+  "author": "taoqiupo <895665504@qq.com>",
+  "homepage": "https://github.com/StevenT1/electron-windows-manager#readme",
+  "license": "ISC",
+  "main": "lib/src.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "registry": "http://172.27.24.217:2748/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StevenT1/electron-windows-manager.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/StevenT1/electron-windows-manager/issues"
+  }
+}
