@@ -21,22 +21,18 @@ declare namespace windowsManager {
   interface userConfig extends Electron.BrowserWindowConstructorOptions {
     name: string;
     totalIdleWindowsNum?: number;
-    urlInfo?: basePathName,
+    urlInfo?: Array<string>,
     showFirst?: boolean;
     component?: string;
     skeleton?: string,
     hostname?: string
   }
-  interface basePathName {
-    hostnameId?: number;
-    hostname: string;
-    pathname: Array<string>;
-  }
   interface native { [k: string]: any }
 
   interface config {
     native: native,
-    resourceDir:string
+    resourceDir:string,
+    hostName:string
   }
 }
 // declare var global: NodeJS.Global & typeof globalThis & { [k: string]: any };

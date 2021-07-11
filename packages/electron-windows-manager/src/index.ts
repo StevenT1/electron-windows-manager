@@ -1,16 +1,18 @@
 import { BrowserWindowConstructorOptions, BrowserWindow, BrowserView, app } from 'electron';
 export class electronWindowsManager {
-  private static __Instance: electronWindowsManager;
+  static __Instance: electronWindowsManager;
   private windowsList: Map<number, windowsManager.windowList>;
   private componentList: Map<string, string | undefined>;
   private totalIdleWindowsNum: number;
+  // native里的函数能否更加通用化一些
   private native: windowsManager.native;
-  private baseUrlInfo: windowsManager.basePathName;
+  private baseUrlInfo: Array<string>;
+  private hostName:string;
   private baseWindowConfig: windowsManager.baseWindowConfig;
   private resourceDir:string;
   private constructor(config: windowsManager.config) {
-    //t
-    this.totalIdleWindowsNum = 5; // 允许空闲的窗口数量
+    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
+    this.baseUrlInfo = config.urlInfo || [];
     this.windowsList = new Map(); // 窗口容器
     this.componentList = new Map();
     // global.path.resourceDir
@@ -21,32 +23,18 @@ export class electronWindowsManager {
       frame: true,
       showByClient: true,
       isBoolWindow: true,
-      showFirst: false
+      showFirst: config.showFirst
     };
-    this.baseUrlInfo = {
-      hostname: '',
-      pathname: []
-    };
+    this.hostName = config.hostName;
+    this.baseUrlInfo = ['name','component'];
     this.native = config.native
 
     // 单例模式
     if (electronWindowsManager.__Instance === undefined) {
+      this.initIdleWindow();
       electronWindowsManager.__Instance = this;
     }
     return electronWindowsManager.__Instance;
-  }
-
-  /**
-   * 设置默认参数
-   * @param {Object} config 
-   * @returns null
-   */
-  public setConfig(config: windowsManager.userConfig) {
-    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4;
-    this.baseWindowConfig.showFirst = config.showFirst;
-    this.baseUrlInfo = config.urlInfo || this.baseUrlInfo;
-    // 初始化窗口
-    this.initIdleWindow();
   }
 
   /**
@@ -54,17 +42,17 @@ export class electronWindowsManager {
    */
   private initIdleWindow(): void {
     // 初始化窗口到给定水平
-    for (var i = this.windowsList.size; i <= this.totalIdleWindowsNum; i++) {
-      this.createIdleWindow({ name: '' });
+    for (let i = this.windowsList.size; i <= this.totalIdleWindowsNum; i++) {
+      this.createIdleWindow();
     }
   }
 
   /**
    * 创建单个空闲窗口
    */
-  public async createIdleWindow(options: windowsManager.userConfig) {
+  public async createIdleWindow(options?: windowsManager.userConfig) {
     if (this.windowsList.size > this.totalIdleWindowsNum) {
-      this.useIdleWindow(options)
+      this.useIdleWindow(options!)
     } else {
       const targetWindowName = options?.name;
       const targetWindowComponent = options?.component;
@@ -97,8 +85,36 @@ export class electronWindowsManager {
     }
   }
   /**
+   * 添加窗口到管理列表
+   * @param {windowsManager.windowList} windowInfo
+   */
+  public addWindow(windowInfo:windowsManager.windowList){
+    const window = this.getWindowById(windowInfo.winId);
+    window.on('close', (e) => {
+      e.preventDefault();
+      if (this.native.getMainWindow() === windowInfo.winId) {
+        app.quit();
+      } else {
+        window!.hide();
+      }
+    })
+    // 设置传参
+    this.windowsList.set(windowInfo.winId, {
+      isOpen: false,
+      name: windowInfo.name,
+      component: windowInfo.component,
+      // 传消息
+      // sendMsg: {},
+      // backMsg: {},
+      isMain: windowInfo.isMain,
+      winId: windowInfo.winId,
+    });
+  }
+
+  /**
    * 设置骨架屏
-   * @param {number,userConfig} id 
+   * @param {number} id 
+   * @param {windowsManager.userConfig} options
    */
   public setSekleton(id: number, options?: windowsManager.userConfig) {
     const window = this.getWindowById(id)
@@ -194,10 +210,10 @@ export class electronWindowsManager {
     const window = this.getWindowById(idelWindowId);
     const reg = RegExp("(http|https|ucf):\/\/.*");
     let url: string;
-    if (!this.baseUrlInfo.hostname) {
+    if (!this.hostName) {
       console.log(Error('没有路由地址'));
     } else {
-      url = (reg.test(options.component || '') ? options.component : `${hostname ? hostname : this.baseUrlInfo.hostname}?${this.baseUrlInfo.pathname[0]}=${options.name}&${this.baseUrlInfo.pathname[1]}=${options.component}`)!
+      url = (reg.test(options.component || '') ? options.component : `${hostname ? hostname : this.hostName}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`)!
       window.webContents.reloadIgnoringCache();
       this.setSekleton(idelWindowId, options);
       window.loadURL(url)
@@ -243,7 +259,7 @@ export class electronWindowsManager {
   }
   /**
    * 通过window的name去获得window的信息和对窗口的引用
-   * @param {*} name 
+   * @param {string} name 
    * @returns Boolean|number
    */
   public getWindowInfoByName(name: string): number {

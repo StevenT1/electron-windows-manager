@@ -32,12 +32,14 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
 class electronWindowsManager {
+  // native里的函数能否更加通用化一些
   constructor(config) {
     this.windowsList = void 0;
     this.componentList = void 0;
     this.totalIdleWindowsNum = void 0;
     this.native = void 0;
     this.baseUrlInfo = void 0;
+    this.hostName = void 0;
     this.baseWindowConfig = void 0;
     this.resourceDir = void 0;
     //t
@@ -56,10 +58,8 @@ class electronWindowsManager {
       isBoolWindow: true,
       showFirst: false
     };
-    this.baseUrlInfo = {
-      hostname: '',
-      pathname: []
-    };
+    this.hostName = config.hostName;
+    this.baseUrlInfo = ['name', 'component'];
     this.native = config.native; // 单例模式
 
     if (electronWindowsManager.__Instance === undefined) {
@@ -70,7 +70,7 @@ class electronWindowsManager {
   }
   /**
    * 设置默认参数
-   * @param {Object} config 
+   * @param {windowsManager.userConfig} config 
    * @returns null
    */
 
@@ -142,8 +142,38 @@ class electronWindowsManager {
     })();
   }
   /**
+   * 添加窗口到管理列表
+   * @param {windowsManager.windowList} windowInfo
+   */
+
+
+  addWindow(windowInfo) {
+    const window = this.getWindowById(windowInfo.winId);
+    window.on('close', e => {
+      e.preventDefault();
+
+      if (this.native.getMainWindow() === windowInfo.winId) {
+        _electron().app.quit();
+      } else {
+        window.hide();
+      }
+    }); // 设置传参
+
+    this.windowsList.set(windowInfo.winId, {
+      isOpen: false,
+      name: windowInfo.name,
+      component: windowInfo.component,
+      // 传消息
+      // sendMsg: {},
+      // backMsg: {},
+      isMain: windowInfo.isMain,
+      winId: windowInfo.winId
+    });
+  }
+  /**
    * 设置骨架屏
-   * @param {number,userConfig} id 
+   * @param {number} id 
+   * @param {windowsManager.userConfig} options
    */
 
 
@@ -252,10 +282,10 @@ class electronWindowsManager {
     const reg = RegExp("(http|https|ucf):\/\/.*");
     let url;
 
-    if (!this.baseUrlInfo.hostname) {
+    if (!this.hostName) {
       console.log(Error('没有路由地址'));
     } else {
-      url = reg.test(options.component || '') ? options.component : `${hostname ? hostname : this.baseUrlInfo.hostname}?${this.baseUrlInfo.pathname[0]}=${options.name}&${this.baseUrlInfo.pathname[1]}=${options.component}`;
+      url = reg.test(options.component || '') ? options.component : `${hostname ? hostname : this.hostName}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`;
       window.webContents.reloadIgnoringCache();
       this.setSekleton(idelWindowId, options);
       window.loadURL(url);
@@ -307,7 +337,7 @@ class electronWindowsManager {
   }
   /**
    * 通过window的name去获得window的信息和对窗口的引用
-   * @param {*} name 
+   * @param {string} name 
    * @returns Boolean|number
    */
 
