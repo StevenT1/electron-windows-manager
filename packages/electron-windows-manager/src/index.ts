@@ -1,4 +1,5 @@
 import { BrowserWindowConstructorOptions, BrowserWindow, BrowserView, app } from 'electron';
+//const { BrowserWindow, app } = require('electron');
 export class electronWindowsManager {
   static __Instance: electronWindowsManager;
   private windowsList: Map<number, windowsManager.windowList>;
