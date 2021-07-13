@@ -42,9 +42,9 @@ class electronWindowsManager {
     this.hostName = void 0;
     this.baseWindowConfig = void 0;
     this.resourceDir = void 0;
-    //t
-    this.totalIdleWindowsNum = 5; // 允许空闲的窗口数量
+    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
 
+    this.baseUrlInfo = config.urlInfo || [];
     this.windowsList = new Map(); // 窗口容器
 
     this.componentList = new Map(); // global.path.resourceDir
@@ -56,31 +56,18 @@ class electronWindowsManager {
       frame: true,
       showByClient: true,
       isBoolWindow: true,
-      showFirst: false
+      showFirst: config.showFirst
     };
     this.hostName = config.hostName;
     this.baseUrlInfo = ['name', 'component'];
     this.native = config.native; // 单例模式
 
     if (electronWindowsManager.__Instance === undefined) {
+      this.initIdleWindow();
       electronWindowsManager.__Instance = this;
     }
 
     return electronWindowsManager.__Instance;
-  }
-  /**
-   * 设置默认参数
-   * @param {windowsManager.userConfig} config 
-   * @returns null
-   */
-
-
-  setConfig(config) {
-    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4;
-    this.baseWindowConfig.showFirst = config.showFirst;
-    this.baseUrlInfo = config.urlInfo || this.baseUrlInfo; // 初始化窗口
-
-    this.initIdleWindow();
   }
   /**
    * 初始化窗口管理,创建出允许的空闲窗口数
@@ -89,10 +76,8 @@ class electronWindowsManager {
 
   initIdleWindow() {
     // 初始化窗口到给定水平
-    for (var i = this.windowsList.size; i <= this.totalIdleWindowsNum; i++) {
-      this.createIdleWindow({
-        name: ''
-      });
+    for (let i = this.windowsList.size; i <= this.totalIdleWindowsNum; i++) {
+      this.createIdleWindow();
     }
   }
   /**
@@ -116,8 +101,6 @@ class electronWindowsManager {
 
         let window = _this.getWindowById(windowInfo.id);
 
-        _this.setSekleton(windowInfo.id, options);
-
         window.on('close', e => {
           e.preventDefault();
 
@@ -138,6 +121,12 @@ class electronWindowsManager {
           isMain: false,
           winId: windowInfo.id
         });
+
+        window.on('ready-to-show', () => {
+          console.log('ready-to-show');
+
+          _this.closeSekleton(windowInfo.id);
+        });
       }
     })();
   }
@@ -147,7 +136,7 @@ class electronWindowsManager {
    */
 
 
-  addWindow(windowInfo) {
+  addWindow(windowInfo, options) {
     const window = this.getWindowById(windowInfo.winId);
     window.on('close', e => {
       e.preventDefault();
@@ -169,6 +158,25 @@ class electronWindowsManager {
       isMain: windowInfo.isMain,
       winId: windowInfo.winId
     });
+    this.setSekleton(windowInfo.winId, options); // window.on('ready-to-show', () => {
+    //   console.log('ready-to-show');
+    //   this.closeSekleton(windowInfo.winId)
+    // })
+  }
+  /**
+   * 设置自定义配置
+   */
+
+
+  setConfig(config) {
+    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
+
+    this.baseUrlInfo = config.urlInfo || []; // global.path.resourceDir
+
+    this.resourceDir = config.resourceDir;
+    this.baseWindowConfig = Object.assign(this.baseWindowConfig, config.baseWindowConfig);
+    this.hostName = config.hostName;
+    this.baseUrlInfo = ['name', 'component'];
   }
   /**
    * 设置骨架屏
@@ -179,21 +187,55 @@ class electronWindowsManager {
 
   setSekleton(id, options) {
     const window = this.getWindowById(id);
-    let view = new (_electron().BrowserView)();
-    new (_electron().BrowserView)();
-    window.setBrowserView(view);
-    view.setAutoResize({
+    let browserView = new (_electron().BrowserView)();
+    window.setBrowserView(browserView);
+    browserView.setBounds({
+      x: 0,
+      y: 0,
+      width: 800,
+      height: 600
+    });
+    browserView.setAutoResize({
       width: true,
       height: true,
       horizontal: true,
       vertical: true
     });
-    view.webContents.loadFile(`${this.resourceDir}/${(options === null || options === void 0 ? void 0 : options.skeleton) !== undefined ? options.skeleton : 'loading.html'}`);
-    view.webContents.on('dom-ready', () => {
-      console.log('stop');
-      window.removeBrowserView(view); // view是否需要置空
-    });
-    return view;
+    let fileUrl = '';
+
+    if (options) {
+      if (!options.skeleton) {
+        fileUrl = `${this.resourceDir}/loading.html`;
+      } else {
+        fileUrl = `${this.resourceDir}/${options.skeleton}`;
+      }
+    }
+
+    browserView.webContents.loadFile(fileUrl);
+    this.windowsList.set(id, Object.assign(this.windowsList.get(id), {
+      view: browserView
+    }));
+  }
+  /**
+   * 关闭骨架屏信息
+   */
+
+
+  closeSekleton(id) {
+    const window = this.getWindowById(id);
+    const windowInfo = this.windowsList.get(id);
+
+    if (windowInfo) {
+      if (!windowInfo.view) {
+        return '该窗口没有骨架屏';
+      } else {
+        console.log('stop');
+        window.removeBrowserView(windowInfo.view);
+        return true;
+      }
+    } else {
+      return '该窗口id不在管理内';
+    }
   }
   /**
    * 使用空白的窗口，用来预渲染目标内容,但不显示
@@ -202,24 +244,39 @@ class electronWindowsManager {
 
   useIdleWindow(options) {
     // 判断参数是否有name和refresh属性（如果有name属性查找该name窗口是否存在，存在显示不存在新建）
-    let idleWindowInfo, idleWindowId;
+    let idleWindowInfo, idleWindow;
 
     if (options.name) {
+      // // 查询是否有该name窗口存在
+      // idleWindowId = this.getWindowInfoByName(options.name);
+      // // 不存在name窗口
+      // if (idleWindowId == -1) {
+      //   idleWindowId = this.getIdleWindow();
+      // }
+      // // 存在name窗口
+      // idleWindowInfo = this.getWindowInfoById(idleWindowId)!;
+      // this.componentList.set(options.name, options.component);
+      // // 路由跳转 覆盖原本的内容
+      // this.urlChange(idleWindowId, options);
+      // // 更新队列
+      // idleWindowInfo.name = options.name;
+      // idleWindowInfo.component = options.component;
       // 查询是否有该name窗口存在
-      idleWindowId = this.getWindowInfoByName(options.name); // 不存在name窗口
+      idleWindowInfo = this.getWindowInfoById(this.getWindowInfoByName(options.name)); //  不存在name窗口
 
-      if (idleWindowId == -1) {
-        idleWindowId = this.getIdleWindow();
-      } // 存在name窗口
+      if (!idleWindowInfo) {
+        const windowId = this.getIdleWindow();
+        idleWindowInfo = this.getWindowInfoById(windowId);
+        idleWindow = this.getWindowById(windowId); // 路由跳转 覆盖原本的name内容
+
+        idleWindowInfo.name = options.name;
+        idleWindowInfo.component = options.component || this.componentList.get(options.name);
+        options.component && this.componentList.set(options.name, options.component); // 是否需要优化，同name窗口时判断是否需要重新载入
+
+        this.urlChange(windowId, options);
+      } // 更新队列
 
 
-      idleWindowInfo = this.getWindowInfoById(idleWindowId);
-      this.componentList.set(options.name, options.component); // 路由跳转 覆盖原本的内容
-
-      this.urlChange(idleWindowId, options, options.hostname); // 更新队列
-
-      idleWindowInfo.name = options.name;
-      idleWindowInfo.component = options.component;
       this.refreshIdleWindowInfo(idleWindowInfo, idleWindowInfo.winId);
     } else {
       throw new Error('需要窗口目标信息');
@@ -237,12 +294,12 @@ class electronWindowsManager {
     options.component = this.componentList.get(options.name); // 主窗如果是代码强行指定可能会出现在这里，该打开还是打开
 
     if (windowInfo) {
-      const window = this.getWindowById(windowId); // lru移动
+      const windowTarget = this.getWindowById(windowId); // lru移动
 
       windowInfo.isOpen = true; // 更新队列
 
       this.refreshIdleWindowInfo(windowInfo, windowId);
-      window.show();
+      windowTarget.show();
     } else {
       this.useIdleWindow(options);
       this.openTargetWindow(options);
@@ -277,7 +334,7 @@ class electronWindowsManager {
    */
 
 
-  urlChange(idelWindowId, options, hostname) {
+  urlChange(idelWindowId, options) {
     const window = this.getWindowById(idelWindowId);
     const reg = RegExp("(http|https|ucf):\/\/.*");
     let url;
@@ -285,7 +342,7 @@ class electronWindowsManager {
     if (!this.hostName) {
       console.log(Error('没有路由地址'));
     } else {
-      url = reg.test(options.component || '') ? options.component : `${hostname ? hostname : this.hostName}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`;
+      url = reg.test(options.component || '') ? options.component : `${options.hostname ? options.hostname : this.hostName}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`;
       window.webContents.reloadIgnoringCache();
       this.setSekleton(idelWindowId, options);
       window.loadURL(url);

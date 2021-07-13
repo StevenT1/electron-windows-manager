@@ -9,6 +9,7 @@ declare namespace windowsManager {
     // backMsg: {},
     isMain: boolean,
     winId: number,
+    view?:Electron.BrowserView
   }
   interface baseWindowConfig {
     show: boolean,
@@ -16,7 +17,7 @@ declare namespace windowsManager {
     frame: boolean,
     showByClient: boolean,
     isBoolWindow: boolean,
-    showFirst?: boolean
+    showFirst: boolean
   }
   interface userConfig extends Electron.BrowserWindowConstructorOptions {
     name: string;
@@ -30,9 +31,12 @@ declare namespace windowsManager {
   interface native { [k: string]: any }
 
   interface config {
+    totalIdleWindowsNum: number;
+    urlInfo: [];
+    baseWindowConfig: baseWindowConfig;
     native: native,
-    resourceDir:string,
-    hostName:string
+    resourceDir: string,
+    hostName: string,
   }
 }
 // declare var global: NodeJS.Global & typeof globalThis & { [k: string]: any };

@@ -7,13 +7,14 @@
   "license": "MIT",
   "scripts": {
     "build": "father-build",
-    "lerna": "^4.0.0"
+    "test": "mocha packages/electron-windows-manager/test"
   },
-  "private":true,
+  "private": true,
   "devDependencies": {
     "father-build": "^1.19.1"
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "dependencies": {}
 }

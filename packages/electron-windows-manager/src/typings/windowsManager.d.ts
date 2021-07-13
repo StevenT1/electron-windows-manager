@@ -9,6 +9,7 @@ declare namespace windowsManager {
     // backMsg: {},
     isMain: boolean,
     winId: number,
+    view?:Electron.BrowserView
   }
   interface baseWindowConfig {
     show: boolean,
@@ -31,8 +32,8 @@ declare namespace windowsManager {
 
   interface config {
     totalIdleWindowsNum: number;
-    urlInfo: never[];
-    showFirst: boolean;
+    urlInfo: [];
+    baseWindowConfig: baseWindowConfig;
     native: native,
     resourceDir: string,
     hostName: string,
