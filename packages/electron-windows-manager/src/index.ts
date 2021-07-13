@@ -1,4 +1,5 @@
 import { BrowserWindowConstructorOptions, BrowserWindow, BrowserView, app } from 'electron';
+//const { BrowserWindow, app } = require('electron');
 export class electronWindowsManager {
   static __Instance: electronWindowsManager;
   private windowsList: Map<number, windowsManager.windowList>;
@@ -23,7 +24,7 @@ export class electronWindowsManager {
       frame: true,
       showByClient: true,
       isBoolWindow: true,
-      showFirst: config.showFirst
+      showFirst: false
     };
     this.hostName = config.hostName;
     this.baseUrlInfo = ['name', 'component'];
