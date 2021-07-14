@@ -1,7 +1,7 @@
 ///<reference types="electron" />
 declare namespace windowsManager {
   interface windowList {
-    name: string | undefined,
+    name: string,
     isOpen: boolean,
     component: string | undefined,
     // 传消息
@@ -9,7 +9,7 @@ declare namespace windowsManager {
     // backMsg: {},
     isMain: boolean,
     winId: number,
-    view?:Electron.BrowserView
+    view?: Electron.BrowserView
   }
   interface baseWindowConfig {
     show: boolean,
@@ -22,21 +22,22 @@ declare namespace windowsManager {
   interface userConfig extends Electron.BrowserWindowConstructorOptions {
     name: string;
     totalIdleWindowsNum?: number;
-    urlInfo?: Array<string>,
+    urlInfo?: Array<string>;
     showFirst?: boolean;
     component?: string;
-    skeleton?: string,
-    hostname?: string
+    Sekleton?: string;
+    isOpenSekleton?: boolean;
+    path?: string
   }
   interface native { [k: string]: any }
 
   interface config {
     totalIdleWindowsNum: number;
-    urlInfo: [];
+    urlInfo: Array<string>;
     baseWindowConfig: baseWindowConfig;
     native: native,
     resourceDir: string,
-    hostName: string,
+    path: string,
   }
 }
 // declare var global: NodeJS.Global & typeof globalThis & { [k: string]: any };

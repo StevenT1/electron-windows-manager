@@ -40,7 +40,8 @@ class electronWindowsManager {
     this.totalIdleWindowsNum = void 0;
     this.native = void 0;
     this.baseUrlInfo = void 0;
-    this.hostName = void 0;
+    this.authority = void 0;
+    this.path = void 0;
     this.baseWindowConfig = void 0;
     this.resourceDir = void 0;
     this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
@@ -59,7 +60,7 @@ class electronWindowsManager {
       isBoolWindow: true,
       showFirst: false
     };
-    this.hostName = config.hostName;
+    this.authority = '';
     this.baseUrlInfo = ['name', 'component'];
     this.native = config.native; // 单例模式
 
@@ -83,6 +84,7 @@ class electronWindowsManager {
   }
   /**
    * 创建单个空闲窗口
+   * @param {windowsManager.userConfig} options
    */
 
 
@@ -90,11 +92,20 @@ class electronWindowsManager {
     var _this = this;
 
     return _asyncToGenerator(function* () {
+      if (!options) {
+        options = {
+          name: '',
+          component: ''
+        };
+      }
+
       if (_this.windowsList.size > _this.totalIdleWindowsNum) {
         _this.useIdleWindow(options);
       } else {
-        const targetWindowName = options === null || options === void 0 ? void 0 : options.name;
-        const targetWindowComponent = options === null || options === void 0 ? void 0 : options.component; // 是否需要删除属性，该属性会传入electron.BrowserWindow中构造窗口
+        var _options;
+
+        const targetWindowName = options.name;
+        const targetWindowComponent = (_options = options) === null || _options === void 0 ? void 0 : _options.component; // 是否需要删除属性，该属性会传入electron.BrowserWindow中构造窗口
         // delete options.name;
         // delete options.component;
 
@@ -104,12 +115,29 @@ class electronWindowsManager {
 
         window.on('close', e => {
           e.preventDefault();
+          console.log(998, _this.native.getWillQuitApp());
 
-          if (_this.native.getMainWindow() === windowInfo.id) {
-            _electron().app.quit();
+          if (_this.native.getWillQuitApp() === true) {
+            window = null;
           } else {
-            window.hide();
+            e.preventDefault(); // fix: use minimize to simulate BrowserWindow.hide
+            // Macos uses hide is very nice;
+
+            if (process.platform.startsWith('win')) {
+              var _window, _window2;
+
+              (_window = window) === null || _window === void 0 ? void 0 : _window.minimize();
+              (_window2 = window) === null || _window2 === void 0 ? void 0 : _window2.setSkipTaskbar(true);
+            } else {
+              var _window3;
+
+              (_window3 = window) === null || _window3 === void 0 ? void 0 : _window3.hide();
+            }
           }
+        });
+        window.on('page-title-updated', (e, title) => {
+          e.preventDefault();
+          console.log('title', title);
         }); // 设置传参
 
         _this.windowsList.set(windowInfo.id, {
@@ -121,13 +149,11 @@ class electronWindowsManager {
           // backMsg: {},
           isMain: false,
           winId: windowInfo.id
-        });
+        }); // window.on('ready-to-show', () => {
+        //   console.log('ready-to-show');
+        //   this.closeSekleton(windowInfo.id)
+        // })
 
-        window.on('ready-to-show', () => {
-          console.log('ready-to-show');
-
-          _this.closeSekleton(windowInfo.id);
-        });
       }
     })();
   }
@@ -143,7 +169,9 @@ class electronWindowsManager {
       e.preventDefault();
 
       if (this.native.getMainWindow() === windowInfo.winId) {
-        _electron().app.quit();
+        if (this.native.getWillQuitApp() === true) {
+          this.closeAllWindows();
+        }
       } else {
         window.hide();
       }
@@ -159,10 +187,32 @@ class electronWindowsManager {
       isMain: windowInfo.isMain,
       winId: windowInfo.winId
     });
-    this.setSekleton(windowInfo.winId, options); // window.on('ready-to-show', () => {
+
+    if (options && options.isOpenSekleton) {
+      this.setSekleton(windowInfo.winId, options);
+    } // window.on('ready-to-show', () => {
     //   console.log('ready-to-show');
     //   this.closeSekleton(windowInfo.winId)
     // })
+
+  }
+  /**
+   * 设置路由path
+   * @param {string} path
+   */
+
+
+  setPath(path) {
+    this.path = path;
+  }
+  /**
+   * 设置路由地址authority
+   * @param {string} authority
+   */
+
+
+  setAuthority(authority) {
+    this.authority = authority;
   }
   /**
    * 设置自定义配置
@@ -176,7 +226,7 @@ class electronWindowsManager {
 
     this.resourceDir = config.resourceDir;
     this.baseWindowConfig = Object.assign(this.baseWindowConfig, config.baseWindowConfig);
-    this.hostName = config.hostName;
+    this.path = config.path;
     this.baseUrlInfo = ['name', 'component'];
   }
   /**
@@ -205,10 +255,10 @@ class electronWindowsManager {
     let fileUrl = '';
 
     if (options) {
-      if (!options.skeleton) {
+      if (!options.Sekleton) {
         fileUrl = `${this.resourceDir}/loading.html`;
       } else {
-        fileUrl = `${this.resourceDir}/${options.skeleton}`;
+        fileUrl = `${this.resourceDir}/${options.Sekleton}`;
       }
     }
 
@@ -248,20 +298,6 @@ class electronWindowsManager {
     let idleWindowInfo, idleWindow;
 
     if (options.name) {
-      // // 查询是否有该name窗口存在
-      // idleWindowId = this.getWindowInfoByName(options.name);
-      // // 不存在name窗口
-      // if (idleWindowId == -1) {
-      //   idleWindowId = this.getIdleWindow();
-      // }
-      // // 存在name窗口
-      // idleWindowInfo = this.getWindowInfoById(idleWindowId)!;
-      // this.componentList.set(options.name, options.component);
-      // // 路由跳转 覆盖原本的内容
-      // this.urlChange(idleWindowId, options);
-      // // 更新队列
-      // idleWindowInfo.name = options.name;
-      // idleWindowInfo.component = options.component;
       // 查询是否有该name窗口存在
       idleWindowInfo = this.getWindowInfoById(this.getWindowInfoByName(options.name)); //  不存在name窗口
 
@@ -331,6 +367,19 @@ class electronWindowsManager {
     }
   }
   /**
+   * 强制关闭所有窗口
+   * @param {}
+   */
+
+
+  closeAllWindows() {
+    this.windowsList.forEach((value, key) => {
+      this.getWindowById(key).close();
+    }); // 清除队列
+
+    this.windowsList.clear();
+  }
+  /**
    * 路由跳转，主要为复用窗口切换显示内容用
    */
 
@@ -340,12 +389,16 @@ class electronWindowsManager {
     const reg = RegExp("(http|https|ucf):\/\/.*");
     let url;
 
-    if (!this.hostName) {
+    if (!this.authority) {
       console.log(Error('没有路由地址'));
     } else {
-      url = reg.test(options.component || '') ? options.component : `${options.hostname ? options.hostname : this.hostName}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`;
+      url = reg.test(options.component || '') ? options.component : `${this.authority}/${options.path ? options.path : this.path}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`;
       window.webContents.reloadIgnoringCache();
-      this.setSekleton(idelWindowId, options);
+
+      if (options && options.isOpenSekleton) {
+        this.setSekleton(idelWindowId, options);
+      }
+
       window.loadURL(url);
     }
   }
@@ -355,6 +408,7 @@ class electronWindowsManager {
 
 
   refreshIdleWindowInfo(windowInfo, winowId) {
+    this.getWindowById(winowId).setTitle(windowInfo.name);
     this.windowsList.delete(winowId);
     this.windowsList.set(winowId, windowInfo);
   }

@@ -1,6 +1,6 @@
 # `electron-windows-manager`
 
-> TODO: description
+electron's windows manager which can provide methods to solve confusion problem
 
 ## Usage
 

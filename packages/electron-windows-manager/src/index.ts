@@ -8,7 +8,8 @@ export class electronWindowsManager {
   // native里的函数能否更加通用化一些
   private native: windowsManager.native;
   private baseUrlInfo: Array<string>;
-  private hostName: string;
+  private authority: string;
+  private path: string | undefined;
   private baseWindowConfig: windowsManager.baseWindowConfig;
   private resourceDir: string;
   private constructor(config: windowsManager.config) {
@@ -26,7 +27,7 @@ export class electronWindowsManager {
       isBoolWindow: true,
       showFirst: false
     };
-    this.hostName = config.hostName;
+    this.authority = '';
     this.baseUrlInfo = ['name', 'component'];
     this.native = config.native
 
@@ -50,25 +51,45 @@ export class electronWindowsManager {
 
   /**
    * 创建单个空闲窗口
+   * @param {windowsManager.userConfig} options
    */
   public async createIdleWindow(options?: windowsManager.userConfig) {
+    if (!options) {
+      options = {
+        name: '',
+        component: ''
+      }
+    }
     if (this.windowsList.size > this.totalIdleWindowsNum) {
       this.useIdleWindow(options!)
     } else {
-      const targetWindowName = options?.name;
+      const targetWindowName = options.name;
       const targetWindowComponent = options?.component;
       // 是否需要删除属性，该属性会传入electron.BrowserWindow中构造窗口
       // delete options.name;
       // delete options.component;
       const windowInfo = await this.native.createWindow(Object.assign({}, this.baseWindowConfig, options));
-      let window = this.getWindowById(windowInfo.id);
+      let window: Electron.BrowserWindow | null = this.getWindowById(windowInfo.id);
       window.on('close', (e) => {
-        e.preventDefault();
-        if (this.native.getMainWindow() === windowInfo.id) {
-          app.quit();
+        console.log(998,this.native.getWillQuitApp() );
+        
+        if (this.native.getWillQuitApp() === true) {
+          window = null;
         } else {
-          window!.hide();
+          e.preventDefault();
+          // fix: use minimize to simulate BrowserWindow.hide
+          // Macos uses hide is very nice;
+          if (process.platform.startsWith('win')) {
+            window?.minimize();
+            window?.setSkipTaskbar(true);
+          } else {
+            window?.hide();
+          }
         }
+      })
+      window.on('page-title-updated', (e, title) => {
+        e.preventDefault();
+        console.log('title', title);
       })
       // 设置传参
       this.windowsList.set(windowInfo.id, {
@@ -81,10 +102,10 @@ export class electronWindowsManager {
         isMain: false,
         winId: windowInfo.id
       });
-      window.on('ready-to-show', () => {
-        console.log('ready-to-show');
-        this.closeSekleton(windowInfo.id)
-      })
+      // window.on('ready-to-show', () => {
+      //   console.log('ready-to-show');
+      //   this.closeSekleton(windowInfo.id)
+      // })
     }
   }
   /**
@@ -96,7 +117,9 @@ export class electronWindowsManager {
     window.on('close', (e) => {
       e.preventDefault();
       if (this.native.getMainWindow() === windowInfo.winId) {
-        app.quit();
+        if (this.native.getWillQuitApp() === true) {
+          this.closeAllWindows();
+        }
       } else {
         window!.hide();
       }
@@ -112,11 +135,27 @@ export class electronWindowsManager {
       isMain: windowInfo.isMain,
       winId: windowInfo.winId,
     });
-    this.setSekleton(windowInfo.winId, options);
+    if (options && options.isOpenSekleton) {
+      this.setSekleton(windowInfo.winId, options);
+    }
     // window.on('ready-to-show', () => {
     //   console.log('ready-to-show');
     //   this.closeSekleton(windowInfo.winId)
     // })
+  }
+  /**
+   * 设置路由path
+   * @param {string} path
+   */
+  public setPath(path: string) {
+    this.path = path;
+  }
+  /**
+   * 设置路由地址authority
+   * @param {string} authority
+   */
+  public setAuthority(authority: string) {
+    this.authority = authority;
   }
 
   /**
@@ -128,7 +167,7 @@ export class electronWindowsManager {
     // global.path.resourceDir
     this.resourceDir = config.resourceDir;
     this.baseWindowConfig = Object.assign(this.baseWindowConfig, config.baseWindowConfig);
-    this.hostName = config.hostName;
+    this.path = config.path;
     this.baseUrlInfo = ['name', 'component'];
   }
   /**
@@ -144,10 +183,10 @@ export class electronWindowsManager {
     browserView.setAutoResize({ width: true, height: true, horizontal: true, vertical: true })
     let fileUrl = '';
     if (options) {
-      if (!options.skeleton) {
+      if (!options.Sekleton) {
         fileUrl = `${this.resourceDir}/loading.html`
       } else {
-        fileUrl = `${this.resourceDir}/${options.skeleton}`
+        fileUrl = `${this.resourceDir}/${options.Sekleton}`
       }
     }
     browserView.webContents.loadFile(fileUrl);
@@ -181,21 +220,6 @@ export class electronWindowsManager {
     // 判断参数是否有name和refresh属性（如果有name属性查找该name窗口是否存在，存在显示不存在新建）
     let idleWindowInfo: windowsManager.windowList | undefined, idleWindow: Electron.BrowserWindow;
     if (options.name) {
-      // // 查询是否有该name窗口存在
-      // idleWindowId = this.getWindowInfoByName(options.name);
-      // // 不存在name窗口
-      // if (idleWindowId == -1) {
-      //   idleWindowId = this.getIdleWindow();
-      // }
-      // // 存在name窗口
-      // idleWindowInfo = this.getWindowInfoById(idleWindowId)!;
-      // this.componentList.set(options.name, options.component);
-      // // 路由跳转 覆盖原本的内容
-      // this.urlChange(idleWindowId, options);
-      // // 更新队列
-      // idleWindowInfo.name = options.name;
-      // idleWindowInfo.component = options.component;
-
       // 查询是否有该name窗口存在
       idleWindowInfo = this.getWindowInfoById(this.getWindowInfoByName(options.name));
 
@@ -266,18 +290,32 @@ export class electronWindowsManager {
   }
 
   /**
+   * 强制关闭所有窗口
+   * @param {}
+   */
+  public closeAllWindows() {
+    this.windowsList.forEach((value, key) => {
+      this.getWindowById(key).close();
+    })
+    // 清除队列
+    this.windowsList.clear();
+  }
+
+  /**
    * 路由跳转，主要为复用窗口切换显示内容用
    */
   private urlChange(idelWindowId: number, options: windowsManager.userConfig) {
     const window = this.getWindowById(idelWindowId);
     const reg = RegExp("(http|https|ucf):\/\/.*");
     let url: string;
-    if (!this.hostName) {
+    if (!this.authority) {
       console.log(Error('没有路由地址'));
     } else {
-      url = (reg.test(options.component || '') ? options.component : `${options.hostname ? options.hostname : this.hostName}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`)!
+      url = (reg.test(options.component || '') ? options.component : `${this.authority}/${options.path ? options.path : this.path}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`)!
       window.webContents.reloadIgnoringCache();
-      this.setSekleton(idelWindowId, options);
+      if (options && options.isOpenSekleton) {
+        this.setSekleton(idelWindowId, options);
+      }
       window.loadURL(url)
     }
   }
@@ -286,6 +324,7 @@ export class electronWindowsManager {
    * 更新维护的窗口管理队列
    */
   private refreshIdleWindowInfo(windowInfo: windowsManager.windowList, winowId: number) {
+    this.getWindowById(winowId).setTitle(windowInfo.name)
     this.windowsList.delete(winowId);
     this.windowsList.set(winowId, windowInfo);
   }
