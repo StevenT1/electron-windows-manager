@@ -3,7 +3,6 @@ declare namespace windowsManager {
   interface windowList {
     name: string,
     isOpen: boolean,
-    component: string | undefined,
     // 传消息
     // sendMsg: {},
     // backMsg: {},
@@ -11,33 +10,35 @@ declare namespace windowsManager {
     winId: number,
     view?: Electron.BrowserView
   }
-  interface baseWindowConfig {
+  interface baseWindowConfig extends Electron.BrowserWindowConstructorOptions {
     show: boolean,
     transparent: boolean,
     frame: boolean,
-    showByClient: boolean,
-    isBoolWindow: boolean,
-    showFirst: boolean
+    showByClient?: boolean,
+    isBoolWindow?: boolean,
+    showFirst: boolean,
+    showByClient?:boolean,
+    bridgeName?:string,
+    maximize?:boolean
   }
-  interface userConfig extends Electron.BrowserWindowConstructorOptions {
-    name: string;
-    totalIdleWindowsNum?: number;
-    urlInfo?: Array<string>;
-    showFirst?: boolean;
-    component?: string;
-    Sekleton?: string;
-    isOpenSekleton?: boolean;
-    path?: string
+  interface userConfig  {
+    name: string,
+    url?:string,
+    file?:string,
+    totalIdleWindowsNum?: number,
+    showFirst?: boolean,
+    Sekleton?: string,
+    resourceDir?:string,
+    isOpenSekleton?: boolean
   }
   interface native { [k: string]: any }
 
   interface config {
-    totalIdleWindowsNum: number;
-    urlInfo: Array<string>;
-    baseWindowConfig: baseWindowConfig;
-    native: native,
+    totalIdleWindowsNum: number,
+    baseWindowConfig: baseWindowConfig,
     resourceDir: string,
-    path: string,
+    webPreferences?:Electron.WebPreferences
   }
 }
-// declare var global: NodeJS.Global & typeof globalThis & { [k: string]: any };
+// declare var global: NodeJS.Global & typeof globalThis & { [k: string]: any },
+declare namespace Electron{}

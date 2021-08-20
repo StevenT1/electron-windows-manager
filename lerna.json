@@ -3,7 +3,7 @@
   "npmClient": "yarn",
   "useWorkspaces": true,
   "command": {
-    "registry": "https://github.com/StevenT1/",
+    "registry": "https://github.com/qiupo/",
     "publish": {
       "allowBranch": "master"
     }

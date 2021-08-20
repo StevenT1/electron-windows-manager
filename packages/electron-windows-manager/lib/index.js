@@ -15,6 +15,8 @@ function _react() {
   return data;
 }
 
+var _sekleton = require("./actions/sekleton");
+
 function _electron() {
   const data = require("electron");
 
@@ -25,6 +27,14 @@ function _electron() {
   return data;
 }
 
+var native = _interopRequireWildcard(require("./actions/native"));
+
+var _bridge = require("./actions/bridge");
+
+function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+
+function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
@@ -33,25 +43,20 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
 //const { BrowserWindow, app } = require('electron');
 class electronWindowsManager {
-  // native里的函数能否更加通用化一些
   constructor(config) {
     this.windowsList = void 0;
-    this.componentList = void 0;
     this.totalIdleWindowsNum = void 0;
-    this.native = void 0;
-    this.baseUrlInfo = void 0;
-    this.authority = void 0;
-    this.path = void 0;
     this.baseWindowConfig = void 0;
+    this.webPreferences = void 0;
     this.resourceDir = void 0;
-    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
+    this.bridge = _bridge.bridge;
+    this.totalIdleWindowsNum = config ? config.totalIdleWindowsNum : 4; // 允许空闲的窗口数量
 
-    this.baseUrlInfo = config.urlInfo || [];
     this.windowsList = new Map(); // 窗口容器
 
-    this.componentList = new Map(); // global.path.resourceDir
+    this.webPreferences = config ? config.webPreferences : {}; // global.path.resourceDir
 
-    this.resourceDir = config.resourceDir;
+    this.resourceDir = config ? config.resourceDir : "";
     this.baseWindowConfig = {
       show: false,
       transparent: false,
@@ -59,13 +64,9 @@ class electronWindowsManager {
       showByClient: true,
       isBoolWindow: true,
       showFirst: false
-    };
-    this.authority = '';
-    this.baseUrlInfo = ['name', 'component'];
-    this.native = config.native; // 单例模式
+    }; // 单例模式
 
     if (electronWindowsManager.__Instance === undefined) {
-      this.initIdleWindow();
       electronWindowsManager.__Instance = this;
     }
 
@@ -77,10 +78,14 @@ class electronWindowsManager {
 
 
   initIdleWindow() {
-    // 初始化窗口到给定水平
-    for (let i = this.windowsList.size; i <= this.totalIdleWindowsNum; i++) {
-      this.createIdleWindow();
-    }
+    var _this = this;
+
+    return _asyncToGenerator(function* () {
+      // 初始化窗口到给定水平
+      for (let i = _this.windowsList.size; i < _this.totalIdleWindowsNum; i++) {
+        yield _this.createIdleWindow();
+      }
+    })();
   }
   /**
    * 创建单个空闲窗口
@@ -88,42 +93,37 @@ class electronWindowsManager {
    */
 
 
-  createIdleWindow(options) {
-    var _this = this;
+  createIdleWindow(userOptions, windowOptions, webPreferences) {
+    var _this2 = this;
 
     return _asyncToGenerator(function* () {
-      if (!options) {
-        options = {
-          name: '',
-          component: ''
+      if (!userOptions) {
+        userOptions = {
+          name: ""
         };
       }
 
-      if (_this.windowsList.size > _this.totalIdleWindowsNum) {
-        _this.useIdleWindow(options);
+      if (_this2.windowsList.size === _this2.totalIdleWindowsNum) {
+        return _this2.useIdleWindow(userOptions);
       } else {
-        var _options;
-
-        const targetWindowName = options.name;
-        const targetWindowComponent = (_options = options) === null || _options === void 0 ? void 0 : _options.component; // 是否需要删除属性，该属性会传入electron.BrowserWindow中构造窗口
+        // 是否需要删除属性，该属性会传入electron.BrowserWindow中构造窗口
         // delete options.name;
         // delete options.component;
+        const windowId = yield native.createWindow(Object.assign({}, _this2.baseWindowConfig, windowOptions), webPreferences || _this2.webPreferences);
 
-        const windowInfo = yield _this.native.createWindow(Object.assign({}, _this.baseWindowConfig, options));
+        let window = _this2.getWindowById(windowId);
 
-        let window = _this.getWindowById(windowInfo.id);
+        window.on("close", e => {
+          // Macos uses hide is very nice;
+          // fix: use minimize to simulate BrowserWindow.hide
+          if (native.getMainWindow() === windowId && native.getWillQuitApp() === true) {
+            _this2.closeAllWindows();
 
-        window.on('close', e => {
-          e.preventDefault();
-          console.log(998, _this.native.getWillQuitApp());
-
-          if (_this.native.getWillQuitApp() === true) {
-            window = null;
+            _electron().app.exit();
           } else {
-            e.preventDefault(); // fix: use minimize to simulate BrowserWindow.hide
-            // Macos uses hide is very nice;
+            e.preventDefault();
 
-            if (process.platform.startsWith('win')) {
+            if (process.platform.startsWith("win")) {
               var _window, _window2;
 
               (_window = window) === null || _window === void 0 ? void 0 : _window.minimize();
@@ -135,25 +135,40 @@ class electronWindowsManager {
             }
           }
         });
-        window.on('page-title-updated', (e, title) => {
-          e.preventDefault();
-          console.log('title', title);
-        }); // 设置传参
+        window.on("closed", () => {
+          window = null;
 
-        _this.windowsList.set(windowInfo.id, {
+          _this2.windowsList.delete(windowId);
+        });
+        window.on("page-title-updated", (e, title) => {
+          e.preventDefault();
+          console.log("title", title);
+        });
+        let windowConfig = {
           isOpen: false,
-          name: targetWindowName,
-          component: targetWindowComponent,
+          name: userOptions.name,
           // 传消息
           // sendMsg: {},
           // backMsg: {},
           isMain: false,
-          winId: windowInfo.id
-        }); // window.on('ready-to-show', () => {
-        //   console.log('ready-to-show');
-        //   this.closeSekleton(windowInfo.id)
-        // })
+          winId: windowId
+        };
 
+        if (userOptions && userOptions.isOpenSekleton) {
+          userOptions["resourceDir"] = _this2.resourceDir;
+          windowConfig = Object.assign(windowConfig, {
+            view: (0, _sekleton.setSekleton)(window, userOptions.Sekleton, userOptions.resourceDir)
+          });
+        } // 设置传参
+
+
+        _this2.windowsList.set(windowId, windowConfig); // window.on("ready-to-show", () => {
+        //   console.log("ready-to-show");
+        //   closeSekleton(window, this.getWindowInfoById(windowId));
+        // });
+
+
+        return window;
       }
     })();
   }
@@ -163,56 +178,41 @@ class electronWindowsManager {
    */
 
 
-  addWindow(windowInfo, options) {
+  addWindow(windowInfo, userOptions) {
     const window = this.getWindowById(windowInfo.winId);
-    window.on('close', e => {
-      e.preventDefault();
-
-      if (this.native.getMainWindow() === windowInfo.winId) {
-        if (this.native.getWillQuitApp() === true) {
-          this.closeAllWindows();
-        }
-      } else {
-        window.hide();
-      }
-    }); // 设置传参
-
-    this.windowsList.set(windowInfo.winId, {
+    let windowConfig = {
       isOpen: false,
       name: windowInfo.name,
-      component: windowInfo.component,
       // 传消息
       // sendMsg: {},
       // backMsg: {},
       isMain: windowInfo.isMain,
       winId: windowInfo.winId
+    };
+    window.on("close", e => {
+      e.preventDefault();
+
+      if (native.getMainWindow() === windowInfo.winId) {
+        if (native.getWillQuitApp() === true) {
+          this.closeAllWindows();
+        }
+      } else {
+        window.hide();
+      }
     });
 
-    if (options && options.isOpenSekleton) {
-      this.setSekleton(windowInfo.winId, options);
-    } // window.on('ready-to-show', () => {
-    //   console.log('ready-to-show');
-    //   this.closeSekleton(windowInfo.winId)
-    // })
-
-  }
-  /**
-   * 设置路由path
-   * @param {string} path
-   */
+    if (userOptions && userOptions.isOpenSekleton) {
+      userOptions["resourceDir"] = userOptions["resourceDir"] || this.resourceDir;
+      windowConfig = Object.assign(windowConfig, {
+        view: (0, _sekleton.setSekleton)(window, userOptions.Sekleton, userOptions.resourceDir)
+      });
+    } // 设置传参
 
 
-  setPath(path) {
-    this.path = path;
-  }
-  /**
-   * 设置路由地址authority
-   * @param {string} authority
-   */
-
-
-  setAuthority(authority) {
-    this.authority = authority;
+    this.windowsList.set(windowInfo.winId, windowConfig); // window.on("ready-to-show", () => {
+    //   console.log("ready-to-show");
+    //   closeSekleton(window, windowConfig);
+    // });
   }
   /**
    * 设置自定义配置
@@ -220,73 +220,16 @@ class electronWindowsManager {
 
 
   setConfig(config) {
-    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
+    var _this3 = this;
 
-    this.baseUrlInfo = config.urlInfo || []; // global.path.resourceDir
+    return _asyncToGenerator(function* () {
+      _this3.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
+      // global.path.resourceDir
 
-    this.resourceDir = config.resourceDir;
-    this.baseWindowConfig = Object.assign(this.baseWindowConfig, config.baseWindowConfig);
-    this.path = config.path;
-    this.baseUrlInfo = ['name', 'component'];
-  }
-  /**
-   * 设置骨架屏
-   * @param {number} id 
-   * @param {windowsManager.userConfig} options
-   */
-
-
-  setSekleton(id, options) {
-    const window = this.getWindowById(id);
-    let browserView = new (_electron().BrowserView)();
-    window.setBrowserView(browserView);
-    browserView.setBounds({
-      x: 0,
-      y: 0,
-      width: 800,
-      height: 600
-    });
-    browserView.setAutoResize({
-      width: true,
-      height: true,
-      horizontal: true,
-      vertical: true
-    });
-    let fileUrl = '';
-
-    if (options) {
-      if (!options.Sekleton) {
-        fileUrl = `${this.resourceDir}/loading.html`;
-      } else {
-        fileUrl = `${this.resourceDir}/${options.Sekleton}`;
-      }
-    }
-
-    browserView.webContents.loadFile(fileUrl);
-    this.windowsList.set(id, Object.assign(this.windowsList.get(id), {
-      view: browserView
-    }));
-  }
-  /**
-   * 关闭骨架屏信息
-   */
-
-
-  closeSekleton(id) {
-    const window = this.getWindowById(id);
-    const windowInfo = this.windowsList.get(id);
-
-    if (windowInfo) {
-      if (!windowInfo.view) {
-        return '该窗口没有骨架屏';
-      } else {
-        console.log('stop');
-        window.removeBrowserView(windowInfo.view);
-        return true;
-      }
-    } else {
-      return '该窗口id不在管理内';
-    }
+      _this3.resourceDir = config.resourceDir || "";
+      _this3.baseWindowConfig = config.baseWindowConfig ? Object.assign(_this3.baseWindowConfig, config.baseWindowConfig) : _this3.baseWindowConfig;
+      _this3.webPreferences = config.webPreferences ? Object.assign(_this3.webPreferences, config.webPreferences) : _this3.webPreferences;
+    })();
   }
   /**
    * 使用空白的窗口，用来预渲染目标内容,但不显示
@@ -299,24 +242,33 @@ class electronWindowsManager {
 
     if (options.name) {
       // 查询是否有该name窗口存在
-      idleWindowInfo = this.getWindowInfoById(this.getWindowInfoByName(options.name)); //  不存在name窗口
+      idleWindowInfo = this.getWindowInfoById(this.getWindowIdByName(options.name)); //  不存在name窗口
 
       if (!idleWindowInfo) {
         const windowId = this.getIdleWindow();
         idleWindowInfo = this.getWindowInfoById(windowId);
-        idleWindow = this.getWindowById(windowId); // 路由跳转 覆盖原本的name内容
+        idleWindow = this.getWindowById(windowId);
 
-        idleWindowInfo.name = options.name;
-        idleWindowInfo.component = options.component || this.componentList.get(options.name);
-        options.component && this.componentList.set(options.name, options.component); // 是否需要优化，同name窗口时判断是否需要重新载入
+        if (options && options.isOpenSekleton) {
+          options["resourceDir"] = this.resourceDir;
+          idleWindowInfo = Object.assign(idleWindowInfo, {
+            view: (0, _sekleton.setSekleton)(idleWindow, options.Sekleton, options.resourceDir)
+          });
+        } // 路由跳转 覆盖原本的name内容
 
-        this.urlChange(windowId, options);
+
+        idleWindowInfo.name = options.name; // 是否需要优化，同name窗口时判断是否需要重新载入
+
+        this.urlChange(windowId, options.url, options.file);
+      } else {
+        idleWindow = this.getWindowById(idleWindowInfo.winId);
       } // 更新队列
 
 
       this.refreshIdleWindowInfo(idleWindowInfo, idleWindowInfo.winId);
+      return idleWindow;
     } else {
-      throw new Error('需要窗口目标信息');
+      throw new Error("需要窗口目标信息");
     }
   }
   /**
@@ -326,9 +278,8 @@ class electronWindowsManager {
 
   openTargetWindow(options) {
     // 不存在时如何处理
-    const windowId = this.getWindowInfoByName(options.name);
-    const windowInfo = this.getWindowInfoById(windowId);
-    options.component = this.componentList.get(options.name); // 主窗如果是代码强行指定可能会出现在这里，该打开还是打开
+    const windowId = this.getWindowIdByName(options.name);
+    const windowInfo = this.getWindowInfoById(windowId); // 主窗如果是代码强行指定可能会出现在这里，该打开还是打开
 
     if (windowInfo) {
       const windowTarget = this.getWindowById(windowId); // lru移动
@@ -348,10 +299,10 @@ class electronWindowsManager {
 
 
   closeTargetWindow(options) {
-    const windowId = this.getWindowInfoByName(options.name);
+    const windowId = this.getWindowIdByName(options.name);
     const windowInfo = this.getWindowInfoById(windowId);
 
-    if (this.native.getMainWindow() === windowId) {
+    if (native.getMainWindow() === windowId) {
       _electron().app.quit();
     } else {
       if (windowInfo) {
@@ -362,7 +313,7 @@ class electronWindowsManager {
 
         this.refreshIdleWindowInfo(windowInfo, windowId);
       } else {
-        throw new Error('没有删除的目标');
+        throw new Error("没有删除的目标");
       }
     }
   }
@@ -374,7 +325,7 @@ class electronWindowsManager {
 
   closeAllWindows() {
     this.windowsList.forEach((value, key) => {
-      this.getWindowById(key).close();
+      if (key !== native.getMainWindow()) this.getWindowById(key).close();
     }); // 清除队列
 
     this.windowsList.clear();
@@ -384,22 +335,34 @@ class electronWindowsManager {
    */
 
 
-  urlChange(idelWindowId, options) {
-    const window = this.getWindowById(idelWindowId);
-    const reg = RegExp("(http|https|ucf):\/\/.*");
-    let url;
+  urlChange(idelWindowId, url, file) {
+    const window = this.getWindowById(idelWindowId); // const reg = RegExp("(http|https|ucf)://.*");
+    // let url: string;
+    // if (!this.authority) {
+    //   console.log(Error("没有路由地址"));
+    // } else {
+    //   url = (
+    //     reg.test(options.component || "")
+    //       ? options.component
+    //       : `${this.authority}/${options.path ? options.path : this.path}?${
+    //           this.baseUrlInfo[0]
+    //         }=${options.name}&${this.baseUrlInfo[1]}=${options.component}`
+    //   )!;
+    //   window.webContents.reloadIgnoringCache();
+    //   if (options && options.isOpenSekleton) {
+    //     options["resourceDir"] = this.resourceDir;
+    //     this.windowsList.set(
+    //       idelWindowId,
+    //       Object.assign(this.windowsList.get(idelWindowId), {
+    //         view: setSekleton(window, options),
+    //       })
+    //     );
+    //   }
+    //   window.loadURL(url);
+    // }
 
-    if (!this.authority) {
-      console.log(Error('没有路由地址'));
-    } else {
-      url = reg.test(options.component || '') ? options.component : `${this.authority}/${options.path ? options.path : this.path}?${this.baseUrlInfo[0]}=${options.name}&${this.baseUrlInfo[1]}=${options.component}`;
-      window.webContents.reloadIgnoringCache();
-
-      if (options && options.isOpenSekleton) {
-        this.setSekleton(idelWindowId, options);
-      }
-
-      window.loadURL(url);
+    if (url) window.loadURL(url);else if (file) window.loadFile(file);else {
+      console.log("没有跳转路径");
     }
   }
   /**
@@ -425,7 +388,7 @@ class electronWindowsManager {
       }
     }); // 都在被使用，寻找到最后使用的窗口进行替换
 
-    if (windowId >= 0) {
+    if (windowId <= 0) {
       var _this$windowsList$get;
 
       // 找到第一个最近未使用的窗口
@@ -449,12 +412,12 @@ class electronWindowsManager {
   }
   /**
    * 通过window的name去获得window的信息和对窗口的引用
-   * @param {string} name 
+   * @param {string} name
    * @returns Boolean|number
    */
 
 
-  getWindowInfoByName(name) {
+  getWindowIdByName(name) {
     let windowId = -1;
     this.windowsList.forEach((value, key) => {
       if (value.name === name) {
@@ -488,7 +451,7 @@ class electronWindowsManager {
 
 
   WMsetMainWindow(name) {
-    const windowId = this.getWindowInfoByName(name);
+    const windowId = this.getWindowIdByName(name);
 
     if (windowId !== -1) {
       let windowInfo = this.windowsList.get(windowId);
@@ -496,11 +459,11 @@ class electronWindowsManager {
       if (windowInfo) {
         windowInfo.isMain = true;
         this.windowsList.set(windowId, windowInfo);
-        this.native.setMainWindow(windowId);
+        native.setMainWindow(windowId);
         return true;
       } else {
         //只要是窗口管理打开的窗口，id存在则窗口队列里肯定有windowInfo，安全起见此处做一个判断
-        console.log('此窗口不存在于窗口管理队列');
+        console.log("此窗口不存在于窗口管理队列");
         return false;
       }
     } else {
@@ -508,12 +471,24 @@ class electronWindowsManager {
     }
   }
   /**
-   * 获得window对象
+   * 通过id获得window对象
    */
 
 
   getWindowById(id) {
     return _electron().BrowserWindow.fromId(id);
+  }
+  /**
+   * 通过name获得window对象
+   */
+
+
+  getWindowByName(name) {
+    return _electron().BrowserWindow.fromId(this.getWindowIdByName(name));
+  }
+
+  closeSekleton(window, windowInfo) {
+    (0, _sekleton.closeSekleton)(window, windowInfo);
   }
 
 }

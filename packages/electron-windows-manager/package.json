@@ -3,7 +3,7 @@
   "version": "0.0.2-test.0",
   "description": "electron's windows manager which can provide methods to solve confusion problem",
   "author": "taoqiupo <895665504@qq.com>",
-  "homepage": "https://github.com/StevenT1/electron-windows-manager#readme",
+  "homepage": "https://github.com/qiupo/electron-windows-manager#readme",
   "license": "ISC",
   "main": "lib/index.js",
   "directories": {
@@ -27,12 +27,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/StevenT1/electron-windows-manager.git"
+    "url": "git+https://github.com/qiupo/electron-windows-manager.git"
   },
   "scripts": {
     "test": "jest"
   },
   "bugs": {
-    "url": "https://github.com/StevenT1/electron-windows-manager/issues"
+    "url": "https://github.com/qiupo/electron-windows-manager/issues"
   }
 }
