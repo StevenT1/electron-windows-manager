@@ -11,12 +11,20 @@ export class electronWindowsManager {
   private webPreferences: Electron.WebPreferences | undefined;
   private resourceDir: string;
   public bridge = bridge;
-  private constructor(config: windowsManager.config | undefined) {
-    this.totalIdleWindowsNum = config ? config.totalIdleWindowsNum : 4; // 允许空闲的窗口数量
+  constructor(
+    windowManagerConfig: windowsManager.windowManagerConfig | undefined
+  ) {
+    this.totalIdleWindowsNum = windowManagerConfig
+      ? windowManagerConfig.totalIdleWindowsNum
+      : 4; // 允许空闲的窗口数量
     this.windowsList = new Map(); // 窗口容器
-    this.webPreferences = config ? config.webPreferences : {};
+    this.webPreferences = windowManagerConfig
+      ? windowManagerConfig.webPreferences
+      : {};
     // global.path.resourceDir
-    this.resourceDir = config ? config.resourceDir : "";
+    this.resourceDir = windowManagerConfig
+      ? windowManagerConfig.resourceDir
+      : "";
     this.baseWindowConfig = {
       show: false,
       transparent: false,
@@ -24,6 +32,7 @@ export class electronWindowsManager {
       showByClient: true,
       isBoolWindow: true,
       showFirst: false,
+      ...windowManagerConfig?.baseWindowConfig,
     };
     // 单例模式
     if (electronWindowsManager.__Instance === undefined) {
@@ -56,7 +65,6 @@ export class electronWindowsManager {
         name: "",
       };
     }
-
     if (this.windowsList.size === this.totalIdleWindowsNum) {
       return this.useIdleWindow(userOptions);
     } else {
@@ -115,7 +123,13 @@ export class electronWindowsManager {
           ),
         });
       }
-
+      if (userOptions.url) {
+        window.loadURL(userOptions.url);
+      } else {
+        if (userOptions.file) {
+          window.loadFile(userOptions.file);
+        }
+      }
       // 设置传参
       this.windowsList.set(windowId, windowConfig);
 
@@ -177,15 +191,20 @@ export class electronWindowsManager {
   /**
    * 设置自定义配置
    */
-  public async setConfig(config: windowsManager.config) {
-    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
+  public async setConfig(
+    windowManagerConfig: windowsManager.windowManagerConfig
+  ) {
+    this.totalIdleWindowsNum = windowManagerConfig.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
     // global.path.resourceDir
-    this.resourceDir = config.resourceDir || "";
-    this.baseWindowConfig = config.baseWindowConfig
-      ? Object.assign(this.baseWindowConfig, config.baseWindowConfig)
+    this.resourceDir = windowManagerConfig.resourceDir || "";
+    this.baseWindowConfig = windowManagerConfig.baseWindowConfig
+      ? Object.assign(
+          this.baseWindowConfig,
+          windowManagerConfig.baseWindowConfig
+        )
       : this.baseWindowConfig;
-    this.webPreferences = config.webPreferences
-      ? Object.assign(this.webPreferences, config.webPreferences)
+    this.webPreferences = windowManagerConfig.webPreferences
+      ? Object.assign(this.webPreferences, windowManagerConfig.webPreferences)
       : this.webPreferences;
   }
 
@@ -195,7 +214,8 @@ export class electronWindowsManager {
   public useIdleWindow(options: windowsManager.userConfig) {
     // 判断参数是否有name和refresh属性（如果有name属性查找该name窗口是否存在，存在显示不存在新建）
     let idleWindowInfo: windowsManager.windowList | undefined,
-      idleWindow: Electron.BrowserWindow;
+      idleWindow: Electron.BrowserWindow,
+      windowId: number;
     if (options.name) {
       // 查询是否有该name窗口存在
       idleWindowInfo = this.getWindowInfoById(
@@ -203,7 +223,11 @@ export class electronWindowsManager {
       );
       //  不存在name窗口
       if (!idleWindowInfo) {
-        const windowId = this.getIdleWindow();
+        windowId = this.getIdleWindow();
+        //不存在窗口
+        if (!windowId) {
+          throw new Error("没有窗口可用");
+        }
         idleWindowInfo = this.getWindowInfoById(windowId)!;
         idleWindow = this.getWindowById(windowId);
         if (options && options.isOpenSekleton) {
@@ -218,11 +242,12 @@ export class electronWindowsManager {
         }
         // 路由跳转 覆盖原本的name内容
         idleWindowInfo.name = options.name;
-        // 是否需要优化，同name窗口时判断是否需要重新载入
-        this.urlChange(windowId, options.url, options.file);
       } else {
+        windowId = idleWindowInfo.winId;
         idleWindow = this.getWindowById(idleWindowInfo.winId);
       }
+      // 是否需要优化，同name窗口时判断是否需要重新载入
+      this.urlChange(windowId, options.url, options.file);
       // 更新队列
       this.refreshIdleWindowInfo(idleWindowInfo, idleWindowInfo.winId);
       return idleWindow;
@@ -237,6 +262,8 @@ export class electronWindowsManager {
   public openTargetWindow(options: windowsManager.userConfig) {
     // 不存在时如何处理
     const windowId: number = this.getWindowIdByName(options.name);
+    console.log(122, options);
+
     const windowInfo: windowsManager.windowList | undefined =
       this.getWindowInfoById(windowId);
     // 主窗如果是代码强行指定可能会出现在这里，该打开还是打开
