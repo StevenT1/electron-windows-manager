@@ -1,6 +1,6 @@
 {
   "name": "@ucf/windows-manager",
-  "version": "0.0.2",
+  "version": "0.0.3-alpha.0",
   "description": "electron's windows manager which can provide methods to solve confusion problem",
   "author": "taoqiupo <895665504@qq.com>",
   "homepage": "https://github.com/qiupo/electron-windows-manager#readme",
