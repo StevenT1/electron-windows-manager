@@ -463,10 +463,10 @@ export class electronWindowsManager {
   public getWindowByName(name: string): Electron.BrowserWindow {
     return BrowserWindow.fromId(this.getWindowIdByName(name))!;
   }
-  public closeSekleton(
-    window: Electron.BrowserWindow | null,
-    windowInfo: windowsManager.windowList | undefined
-  ) {
-    closeSekleton(window, windowInfo);
+  public closeSekleton(name: string) {
+    closeSekleton(
+      this.getWindowByName(name),
+      this.getWindowInfoById(this.getWindowIdByName(name))
+    );
   }
 }
