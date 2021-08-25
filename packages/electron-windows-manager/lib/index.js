@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.initWindowManager = initWindowManager;
 exports.electronWindowsManager = void 0;
 
 function _react() {
@@ -41,15 +42,26 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 //const { BrowserWindow, app } = require('electron');
 class electronWindowsManager {
+<<<<<<< HEAD
   constructor(config) {
+=======
+  constructor(windowManagerConfig) {
+>>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
     this.windowsList = void 0;
     this.totalIdleWindowsNum = void 0;
     this.baseWindowConfig = void 0;
     this.webPreferences = void 0;
     this.resourceDir = void 0;
     this.bridge = _bridge.bridge;
+<<<<<<< HEAD
     this.totalIdleWindowsNum = config ? config.totalIdleWindowsNum : 4; // 允许空闲的窗口数量
 
     this.windowsList = new Map(); // 窗口容器
@@ -58,13 +70,27 @@ class electronWindowsManager {
 
     this.resourceDir = config ? config.resourceDir : "";
     this.baseWindowConfig = {
+=======
+    this.totalIdleWindowsNum = windowManagerConfig ? windowManagerConfig.totalIdleWindowsNum : 4; // 允许空闲的窗口数量
+
+    this.windowsList = new Map(); // 窗口容器
+
+    this.webPreferences = windowManagerConfig ? windowManagerConfig.webPreferences : {}; // global.path.resourceDir
+
+    this.resourceDir = windowManagerConfig ? windowManagerConfig.resourceDir : "";
+    this.baseWindowConfig = _objectSpread({
+>>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
       show: false,
       transparent: false,
       frame: true,
       showByClient: true,
       isBoolWindow: true,
       showFirst: false
+<<<<<<< HEAD
     }; // 单例模式
+=======
+    }, windowManagerConfig === null || windowManagerConfig === void 0 ? void 0 : windowManagerConfig.baseWindowConfig); // 单例模式
+>>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
 
     if (electronWindowsManager.__Instance === undefined) {
       electronWindowsManager.__Instance = this;
@@ -219,6 +245,7 @@ class electronWindowsManager {
    */
 
 
+<<<<<<< HEAD
   setConfig(config) {
     var _this3 = this;
 
@@ -229,6 +256,18 @@ class electronWindowsManager {
       _this3.resourceDir = config.resourceDir || "";
       _this3.baseWindowConfig = config.baseWindowConfig ? Object.assign(_this3.baseWindowConfig, config.baseWindowConfig) : _this3.baseWindowConfig;
       _this3.webPreferences = config.webPreferences ? Object.assign(_this3.webPreferences, config.webPreferences) : _this3.webPreferences;
+=======
+  setConfig(windowManagerConfig) {
+    var _this3 = this;
+
+    return _asyncToGenerator(function* () {
+      _this3.totalIdleWindowsNum = windowManagerConfig.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
+      // global.path.resourceDir
+
+      _this3.resourceDir = windowManagerConfig.resourceDir || "";
+      _this3.baseWindowConfig = windowManagerConfig.baseWindowConfig ? Object.assign(_this3.baseWindowConfig, windowManagerConfig.baseWindowConfig) : _this3.baseWindowConfig;
+      _this3.webPreferences = windowManagerConfig.webPreferences ? Object.assign(_this3.webPreferences, windowManagerConfig.webPreferences) : _this3.webPreferences;
+>>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
     })();
   }
   /**
@@ -248,6 +287,7 @@ class electronWindowsManager {
         const windowId = this.getIdleWindow();
         idleWindowInfo = this.getWindowInfoById(windowId);
         idleWindow = this.getWindowById(windowId);
+<<<<<<< HEAD
 
         if (options && options.isOpenSekleton) {
           options["resourceDir"] = this.resourceDir;
@@ -259,6 +299,19 @@ class electronWindowsManager {
 
         idleWindowInfo.name = options.name; // 是否需要优化，同name窗口时判断是否需要重新载入
 
+=======
+
+        if (options && options.isOpenSekleton) {
+          options["resourceDir"] = this.resourceDir;
+          idleWindowInfo = Object.assign(idleWindowInfo, {
+            view: (0, _sekleton.setSekleton)(idleWindow, options.Sekleton, options.resourceDir)
+          });
+        } // 路由跳转 覆盖原本的name内容
+
+
+        idleWindowInfo.name = options.name; // 是否需要优化，同name窗口时判断是否需要重新载入
+
+>>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
         this.urlChange(windowId, options.url, options.file);
       } else {
         idleWindow = this.getWindowById(idleWindowInfo.winId);
@@ -327,6 +380,7 @@ class electronWindowsManager {
     this.windowsList.forEach((value, key) => {
       if (key !== native.getMainWindow()) this.getWindowById(key).close();
     }); // 清除队列
+<<<<<<< HEAD
 
     this.windowsList.clear();
   }
@@ -334,6 +388,15 @@ class electronWindowsManager {
    * 路由跳转，主要为复用窗口切换显示内容用
    */
 
+=======
+
+    this.windowsList.clear();
+  }
+  /**
+   * 路由跳转，主要为复用窗口切换显示内容用
+   */
+
+>>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
 
   urlChange(idelWindowId, url, file) {
     const window = this.getWindowById(idelWindowId); // const reg = RegExp("(http|https|ucf)://.*");
@@ -492,6 +555,17 @@ class electronWindowsManager {
   }
 
 }
+/**
+ * 初始化窗口管理
+ * @param {object} options
+ * @returns
+ */
+
 
 exports.electronWindowsManager = electronWindowsManager;
 electronWindowsManager.__Instance = void 0;
+
+function initWindowManager(options) {
+  //@ts-ignore
+  ucf.windowManager = new electronWindowsManager(options);
+}
