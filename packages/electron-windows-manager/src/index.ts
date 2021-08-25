@@ -11,14 +11,6 @@ export class electronWindowsManager {
   private webPreferences: Electron.WebPreferences | undefined;
   private resourceDir: string;
   public bridge = bridge;
-<<<<<<< HEAD
-  private constructor(config: windowsManager.config | undefined) {
-    this.totalIdleWindowsNum = config ? config.totalIdleWindowsNum : 4; // 允许空闲的窗口数量
-    this.windowsList = new Map(); // 窗口容器
-    this.webPreferences = config ? config.webPreferences : {};
-    // global.path.resourceDir
-    this.resourceDir = config ? config.resourceDir : "";
-=======
   constructor(
     windowManagerConfig: windowsManager.windowManagerConfig | undefined
   ) {
@@ -33,7 +25,6 @@ export class electronWindowsManager {
     this.resourceDir = windowManagerConfig
       ? windowManagerConfig.resourceDir
       : "";
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
     this.baseWindowConfig = {
       show: false,
       transparent: false,
@@ -41,10 +32,7 @@ export class electronWindowsManager {
       showByClient: true,
       isBoolWindow: true,
       showFirst: false,
-<<<<<<< HEAD
-=======
       ...windowManagerConfig?.baseWindowConfig,
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
     };
     // 单例模式
     if (electronWindowsManager.__Instance === undefined) {
@@ -198,17 +186,6 @@ export class electronWindowsManager {
   /**
    * 设置自定义配置
    */
-<<<<<<< HEAD
-  public async setConfig(config: windowsManager.config) {
-    this.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
-    // global.path.resourceDir
-    this.resourceDir = config.resourceDir || "";
-    this.baseWindowConfig = config.baseWindowConfig
-      ? Object.assign(this.baseWindowConfig, config.baseWindowConfig)
-      : this.baseWindowConfig;
-    this.webPreferences = config.webPreferences
-      ? Object.assign(this.webPreferences, config.webPreferences)
-=======
   public async setConfig(
     windowManagerConfig: windowsManager.windowManagerConfig
   ) {
@@ -223,7 +200,6 @@ export class electronWindowsManager {
       : this.baseWindowConfig;
     this.webPreferences = windowManagerConfig.webPreferences
       ? Object.assign(this.webPreferences, windowManagerConfig.webPreferences)
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
       : this.webPreferences;
   }
 
@@ -481,8 +457,6 @@ export class electronWindowsManager {
     closeSekleton(window, windowInfo);
   }
 }
-<<<<<<< HEAD
-=======
 /**
  * 初始化窗口管理
  * @param {object} options
@@ -492,4 +466,3 @@ export function initWindowManager(options: windowsManager.windowManagerConfig) {
   //@ts-ignore
   ucf.windowManager = new electronWindowsManager(options);
 }
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d

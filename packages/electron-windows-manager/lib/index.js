@@ -50,27 +50,13 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 //const { BrowserWindow, app } = require('electron');
 class electronWindowsManager {
-<<<<<<< HEAD
-  constructor(config) {
-=======
   constructor(windowManagerConfig) {
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
     this.windowsList = void 0;
     this.totalIdleWindowsNum = void 0;
     this.baseWindowConfig = void 0;
     this.webPreferences = void 0;
     this.resourceDir = void 0;
     this.bridge = _bridge.bridge;
-<<<<<<< HEAD
-    this.totalIdleWindowsNum = config ? config.totalIdleWindowsNum : 4; // 允许空闲的窗口数量
-
-    this.windowsList = new Map(); // 窗口容器
-
-    this.webPreferences = config ? config.webPreferences : {}; // global.path.resourceDir
-
-    this.resourceDir = config ? config.resourceDir : "";
-    this.baseWindowConfig = {
-=======
     this.totalIdleWindowsNum = windowManagerConfig ? windowManagerConfig.totalIdleWindowsNum : 4; // 允许空闲的窗口数量
 
     this.windowsList = new Map(); // 窗口容器
@@ -79,18 +65,13 @@ class electronWindowsManager {
 
     this.resourceDir = windowManagerConfig ? windowManagerConfig.resourceDir : "";
     this.baseWindowConfig = _objectSpread({
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
       show: false,
       transparent: false,
       frame: true,
       showByClient: true,
       isBoolWindow: true,
       showFirst: false
-<<<<<<< HEAD
-    }; // 单例模式
-=======
     }, windowManagerConfig === null || windowManagerConfig === void 0 ? void 0 : windowManagerConfig.baseWindowConfig); // 单例模式
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
 
     if (electronWindowsManager.__Instance === undefined) {
       electronWindowsManager.__Instance = this;
@@ -245,18 +226,6 @@ class electronWindowsManager {
    */
 
 
-<<<<<<< HEAD
-  setConfig(config) {
-    var _this3 = this;
-
-    return _asyncToGenerator(function* () {
-      _this3.totalIdleWindowsNum = config.totalIdleWindowsNum || 4; // 允许空闲的窗口数量
-      // global.path.resourceDir
-
-      _this3.resourceDir = config.resourceDir || "";
-      _this3.baseWindowConfig = config.baseWindowConfig ? Object.assign(_this3.baseWindowConfig, config.baseWindowConfig) : _this3.baseWindowConfig;
-      _this3.webPreferences = config.webPreferences ? Object.assign(_this3.webPreferences, config.webPreferences) : _this3.webPreferences;
-=======
   setConfig(windowManagerConfig) {
     var _this3 = this;
 
@@ -267,7 +236,6 @@ class electronWindowsManager {
       _this3.resourceDir = windowManagerConfig.resourceDir || "";
       _this3.baseWindowConfig = windowManagerConfig.baseWindowConfig ? Object.assign(_this3.baseWindowConfig, windowManagerConfig.baseWindowConfig) : _this3.baseWindowConfig;
       _this3.webPreferences = windowManagerConfig.webPreferences ? Object.assign(_this3.webPreferences, windowManagerConfig.webPreferences) : _this3.webPreferences;
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
     })();
   }
   /**
@@ -287,7 +255,6 @@ class electronWindowsManager {
         const windowId = this.getIdleWindow();
         idleWindowInfo = this.getWindowInfoById(windowId);
         idleWindow = this.getWindowById(windowId);
-<<<<<<< HEAD
 
         if (options && options.isOpenSekleton) {
           options["resourceDir"] = this.resourceDir;
@@ -299,19 +266,6 @@ class electronWindowsManager {
 
         idleWindowInfo.name = options.name; // 是否需要优化，同name窗口时判断是否需要重新载入
 
-=======
-
-        if (options && options.isOpenSekleton) {
-          options["resourceDir"] = this.resourceDir;
-          idleWindowInfo = Object.assign(idleWindowInfo, {
-            view: (0, _sekleton.setSekleton)(idleWindow, options.Sekleton, options.resourceDir)
-          });
-        } // 路由跳转 覆盖原本的name内容
-
-
-        idleWindowInfo.name = options.name; // 是否需要优化，同name窗口时判断是否需要重新载入
-
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
         this.urlChange(windowId, options.url, options.file);
       } else {
         idleWindow = this.getWindowById(idleWindowInfo.winId);
@@ -380,7 +334,6 @@ class electronWindowsManager {
     this.windowsList.forEach((value, key) => {
       if (key !== native.getMainWindow()) this.getWindowById(key).close();
     }); // 清除队列
-<<<<<<< HEAD
 
     this.windowsList.clear();
   }
@@ -388,15 +341,6 @@ class electronWindowsManager {
    * 路由跳转，主要为复用窗口切换显示内容用
    */
 
-=======
-
-    this.windowsList.clear();
-  }
-  /**
-   * 路由跳转，主要为复用窗口切换显示内容用
-   */
-
->>>>>>> 5d9d17679d4f5c7432ef2fa06e027bfedbcc377d
 
   urlChange(idelWindowId, url, file) {
     const window = this.getWindowById(idelWindowId); // const reg = RegExp("(http|https|ucf)://.*");
