@@ -1,6 +1,6 @@
 {
   "name": "electron-windows-manager",
-  "version": "0.0.2-test.0",
+  "version": "0.0.2",
   "description": "electron's windows manager which can provide methods to solve confusion problem",
   "author": "taoqiupo <895665504@qq.com>",
   "homepage": "https://github.com/qiupo/electron-windows-manager#readme",
