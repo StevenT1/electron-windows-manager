@@ -168,24 +168,26 @@ app.on("ready", async () => {
     - **maximize** (boolean): 是否最小化
     - **other** 参考[electron.BrowserWindow](https://www.electronjs.org/docs/api/browser-window#new-browserwindowoptions)的配置
   - **webPreferences**
-    参考[electron.BrowserWindow](https://www.electronjs.org/docs/api/browser-window#new-browserwindowoptions)的配置
+    参考[electron.BrowserWindow](https://www.electronjs.org/docs/api/browser-window#new-browserwindowoptions)的配置、
 
-    🌰:
+🌰:
 
-    ```javascript
-    electronWindowsManager.createIdleWindow(
-      {
-        name: "main",
-        file: path.join(__dirname, "index.html"),
-        isOpenSekleton: false,
-      },
-      {
-        show: true,
-        showFirst: true,
-        preloadPath: "./preload.js",
-      }
-    );
-    ```
+```javascript
+electronWindowsManager.createIdleWindow(
+  {
+    name: "main",
+    file: path.join(__dirname, "index.html"),
+    isOpenSekleton: false,
+  },
+  {
+    show: true,
+    showFirst: true,
+    preloadPath: "./preload.js",
+  }
+);
+```
+
+---
 
 ### `addWindow( params )`
 
@@ -324,11 +326,13 @@ electronWindowsManager.addWindow({
 
 设置主窗口关闭是否退出
 
-- **mode**(boolean):是否退出的标识
+- **mode**(boolean): 是否退出的标识
+
 ---
 
 ## Final notes
-  如有问题请提issue
+
+如有问题请提 issue
 
 ## License
 
