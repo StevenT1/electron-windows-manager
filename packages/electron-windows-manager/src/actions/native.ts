@@ -1,5 +1,5 @@
 import electron, { app } from 'electron';
-let mainWindow: Electron.BrowserWindow | null = null;
+let mainWindow: number;
 const isReady = app.whenReady();
 let willQuitApp = true;
 /**
@@ -53,13 +53,13 @@ async function createWindow(
  * 设置为主窗口
  */
 function setMainWindow(id: number) {
-  mainWindow = electron.BrowserWindow.fromId(id);
+  mainWindow = id
 }
 /**
  * 获得主窗口
  */
 function getMainWindow() {
-  return mainWindow?.id;
+  return mainWindow;
 }
 /**
  * 设置主窗口关闭是否退出

@@ -17,11 +17,11 @@ declare namespace windowsManager {
     showByClient?: boolean,
     isBoolWindow?: boolean,
     showFirst: boolean,
-    showByClient?:boolean,
     bridgeName?:string,
     maximize?:boolean
   }
   interface userConfig  {
+    isCache: boolean;
     name: string,
     url?:string,
     file?:string,
@@ -33,7 +33,7 @@ declare namespace windowsManager {
   }
   interface native { [k: string]: any }
 
-  interface config {
+  interface windowManagerConfig {
     totalIdleWindowsNum: number,
     baseWindowConfig: baseWindowConfig,
     resourceDir: string,

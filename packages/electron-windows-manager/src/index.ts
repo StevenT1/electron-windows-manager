@@ -3,7 +3,7 @@ import { app, BrowserWindow } from "electron";
 import * as native from "./actions/native";
 import { bridge } from "./actions/bridge";
 //const { BrowserWindow, app } = require('electron');
-export class electronWindowsManager {
+export default class electronWindowsManager {
   static __Instance: electronWindowsManager;
   private windowsList: Map<number, windowsManager.windowList>;
   private totalIdleWindowsNum: number;
@@ -47,7 +47,7 @@ export class electronWindowsManager {
   public async initIdleWindow(): Promise<void> {
     // 初始化窗口到给定水平
     for (let i = this.windowsList.size; i < this.totalIdleWindowsNum; i++) {
-      await this.createIdleWindow();
+      await this.createIdleWindow({});
     }
   }
 
@@ -55,14 +55,17 @@ export class electronWindowsManager {
    * 创建单个空闲窗口
    * @param {windowsManager.userConfig} options
    */
-  public async createIdleWindow(
-    userOptions?: windowsManager.userConfig,
-    windowOptions?: windowsManager.baseWindowConfig,
-    webPreferences?: Electron.WebPreferences
-  ) {
+  public async createIdleWindow(params: {
+    userOptions?: windowsManager.userConfig;
+    windowOptions?: windowsManager.baseWindowConfig;
+    webPreferences?: Electron.WebPreferences;
+  }) {
+    
+    let { userOptions, windowOptions, webPreferences } = params;
     if (!userOptions) {
       userOptions = {
         name: "",
+        isCache: true,
       };
     }
     if (this.windowsList.size === this.totalIdleWindowsNum) {
@@ -80,23 +83,32 @@ export class electronWindowsManager {
       window.on("close", (e) => {
         // Macos uses hide is very nice;
         // fix: use minimize to simulate BrowserWindow.hide
-        if (
-          native.getMainWindow() === windowId &&
-          native.getWillQuitApp() === true
-        ) {
-          this.closeAllWindows();
-          app.exit();
-        } else {
-          e.preventDefault();
-          if (process.platform.startsWith("win")) {
-            window?.minimize();
-            window?.setSkipTaskbar(true);
-          } else {
-            window?.hide();
+        if (!userOptions) {
+          throw new Error("userOptions 不存在");
+        }
+        if (userOptions.isCache || userOptions.isCache === undefined) {
+          if (
+            !(
+              native.getMainWindow() === windowId &&
+              native.getWillQuitApp() === true
+            )
+          ) {
+            e.preventDefault();
+            if (process.platform.startsWith("win")) {
+              window?.minimize();
+              window?.setSkipTaskbar(true);
+            } else {
+              window?.hide();
+            }
           }
         }
       });
       window.on("closed", () => {
+        console.log("closed");
+
+        if (native.getMainWindow() === windowId) {
+          this.closeAllWindows();
+        }
         window = null;
         this.windowsList.delete(windowId);
       });
@@ -145,26 +157,21 @@ export class electronWindowsManager {
    * 添加窗口到管理列表
    * @param {windowsManager.windowList} windowInfo
    */
-  public addWindow(
-    windowInfo: windowsManager.windowList,
-    userOptions?: windowsManager.userConfig
-  ) {
+  public addWindow(parmas: {
+    windowInfo: windowsManager.windowList;
+    userOptions?: windowsManager.userConfig;
+  }) {
+    let { windowInfo, userOptions } = parmas;
     const window = this.getWindowById(windowInfo.winId);
-    let windowConfig: windowsManager.windowList = {
-      isOpen: false,
-      name: windowInfo.name,
-      // 传消息
-      // sendMsg: {},
-      // backMsg: {},
-      isMain: windowInfo.isMain,
-      winId: windowInfo.winId,
-    };
+    let windowConfig: windowsManager.windowList = windowInfo;
     window.on("close", (e) => {
       e.preventDefault();
-      if (native.getMainWindow() === windowInfo.winId) {
-        if (native.getWillQuitApp() === true) {
-          this.closeAllWindows();
-        }
+      if (
+        native.getMainWindow() === windowInfo.winId &&
+        native.getWillQuitApp() === true
+      ) {
+        this.closeAllWindows();
+        // app.quit();
       } else {
         window!.hide();
       }
@@ -262,7 +269,6 @@ export class electronWindowsManager {
   public openTargetWindow(options: windowsManager.userConfig) {
     // 不存在时如何处理
     const windowId: number = this.getWindowIdByName(options.name);
-    console.log(122, options);
 
     const windowInfo: windowsManager.windowList | undefined =
       this.getWindowInfoById(windowId);
@@ -287,8 +293,11 @@ export class electronWindowsManager {
     const windowId = this.getWindowIdByName(options.name);
     const windowInfo = this.getWindowInfoById(windowId);
 
-    if (native.getMainWindow() === windowId) {
-      app.quit();
+    if (
+      native.getMainWindow() === windowId &&
+      native.getWillQuitApp() === true
+    ) {
+      this.closeAllWindows();
     } else {
       if (windowInfo) {
         // 窗口基础状态
@@ -304,15 +313,17 @@ export class electronWindowsManager {
   }
 
   /**
-   * 强制关闭所有窗口
+   * 关闭所有窗口
    * @param {}
    */
   public closeAllWindows() {
     this.windowsList.forEach((value, key) => {
-      if (key !== native.getMainWindow()) this.getWindowById(key).close();
+      if (key !== native.getMainWindow()) {
+        const window = this.getWindowById(key);
+        window.removeAllListeners("close");
+        this.getWindowById(key).close();
+      }
     });
-    // 清除队列
-    this.windowsList.clear();
   }
 
   /**
@@ -446,6 +457,7 @@ export class electronWindowsManager {
         return false;
       }
     } else {
+      console.log("找不到对应窗口");
       return false;
     }
   }
@@ -463,10 +475,20 @@ export class electronWindowsManager {
   public getWindowByName(name: string): Electron.BrowserWindow {
     return BrowserWindow.fromId(this.getWindowIdByName(name))!;
   }
+
+  /**
+   * 关闭指定name窗口的骨架屏
+   */
   public closeSekleton(name: string) {
     closeSekleton(
       this.getWindowByName(name),
       this.getWindowInfoById(this.getWindowIdByName(name))
     );
+  }
+  /**
+   * 设置主窗口关闭是否退出
+   */
+  public setQuitMode(mode: boolean) {
+    native.setQuitMode(mode);
   }
 }

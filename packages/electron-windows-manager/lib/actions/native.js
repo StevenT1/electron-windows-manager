@@ -45,7 +45,7 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
-let mainWindow = null;
+let mainWindow;
 
 const isReady = _electron().app.whenReady();
 
@@ -100,7 +100,7 @@ function _createWindow() {
 }
 
 function setMainWindow(id) {
-  mainWindow = _electron().default.BrowserWindow.fromId(id);
+  mainWindow = id;
 }
 /**
  * 获得主窗口
@@ -108,9 +108,7 @@ function setMainWindow(id) {
 
 
 function getMainWindow() {
-  var _mainWindow;
-
-  return (_mainWindow = mainWindow) === null || _mainWindow === void 0 ? void 0 : _mainWindow.id;
+  return mainWindow;
 }
 /**
  * 设置主窗口关闭是否退出
