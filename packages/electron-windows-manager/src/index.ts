@@ -331,7 +331,7 @@ export default class electronWindowsManager {
    */
   private urlChange(idelWindowId: number, url?: string, file?: string) {
     const window = this.getWindowById(idelWindowId);
-    // const reg = RegExp("(http|https|ucf)://.*");
+    // const reg = RegExp("(http|https)://.*");
     // let url: string;
     // if (!this.authority) {
     //   console.log(Error("没有路由地址"));
